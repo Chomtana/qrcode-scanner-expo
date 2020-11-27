@@ -1,7 +1,6 @@
 import React from "react";
 import { Dimensions, Clipboard, StyleSheet } from "react-native";
 import { Container, Text, Button, Content } from "native-base";
-import { Constants } from "expo";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Grid, Row } from "react-native-easy-grid";
 
@@ -14,7 +13,9 @@ class ResultScreen extends React.Component {
     super(props);
     this.state = {
       loading: true,
-      copied: false
+      copied: false,
+
+      participantName: ""
     };
   }
 
@@ -26,26 +27,31 @@ class ResultScreen extends React.Component {
   render() {
     const { navigation } = this.props;
     const qr = navigation.getParam("qr", "NO-QR");
+    const participantName = navigation.getParam("participantName", "...")
     let { height: screenHeight } = Dimensions.get("window");
     screenHeight = screenHeight - 400;
 
     return (
-      <Container style={{ marginTop: Constants.statusBarHeight }}>
+      <Container style={{ marginTop: 40 }}>
         <Content>
           <Grid>
             <Row style={styles.qrCard}>
-              <MaterialCommunityIcons name="qrcode" size={70} color="green" />
-              <Text style={styles.qrTitle}>{qr}</Text>
+              {/* <MaterialCommunityIcons name="qrcode" size={70} color="green" /> */}
+              {/* <Text style={styles.qrTitle}>{qr}</Text> */}
+              <Text>สวัสดี {participantName}</Text>
             </Row>
-            <Row style={styles.copyButton}>
+            <Row style={styles.copyButtonContainer}>
               <Button
                 danger={!this.state.copied}
                 success={this.state.copied}
                 onPress={() => {
-                  this.copyToClipboard(qr);
+                  // this.copyToClipboard(qr);
+                  this.props.navigation.navigate("Scanner")
                 }}
+
+                style={styles.copyButton}
               >
-                <Text style={styles.copyButtonTitle}>Copy to Clipboard</Text>
+                <Text style={styles.copyButtonTitle}>Back</Text>
               </Button>
             </Row>
           </Grid>
@@ -67,9 +73,13 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   qrTitle: { paddingTop: 10 },
-  copyButton: {
+  copyButtonContainer: {
     justifyContent: "center",
-    marginTop: 350
+    marginTop: "85%"
+  },
+  copyButton: {
+    height: 100,
+    width: 300,
   },
   copyButtonTitle: { color: "white" }
 });

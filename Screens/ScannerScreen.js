@@ -3,18 +3,23 @@ import { Dimensions, StyleSheet } from "react-native";
 import { Container, Text, View } from "native-base";
 import { Grid, Row } from "react-native-easy-grid";
 import { withNavigationFocus } from "react-navigation";
-import { BarCodeScanner, Permissions } from "expo";
+import { BarCodeScanner } from 'expo-barcode-scanner';
+import * as Permissions from 'expo-permissions';
 import { FontAwesome } from "@expo/vector-icons";
 import SQL from "../components/SQL";
 import { SpinnerScreen } from "../components/commons";
+import axios from "axios"
 
 class ScannerScreen extends React.Component {
+  decoding = false;
+
   static navigationOptions = {
     header: null //hide the header bar
   };
 
   state = {
-    hasCameraPermission: null
+    hasCameraPermission: null,
+    decoding: false,
   };
 
   async componentDidMount() {
@@ -27,11 +32,59 @@ class ScannerScreen extends React.Component {
     SQL.AddQR(qr);
   };
 
-  handleBarCodeScanned = ({ type, data }) => {
+  processPost = async (url) => {
+    try {
+      let response = await axios.post(url);
+      let data = response.data;
+
+      return data.fullName;
+    } catch (err) {
+      console.error(err);
+
+      if (err.response) {
+        if (err.response.status == 404) {
+          return "!! ไม่พบข้อมูล !!"
+        } else if (err.response.status == 400) {
+          if (["used"].indexOf(err.response.data.status) != -1) {
+            return "!! QR Code นี้ถูกใช้ไปแล้ว !!"
+          }
+        }
+      }
+
+      return "!! เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ !!"
+    }
+  }
+
+  qrCallback = async (res) => {
+    if (res && !this.decoding) {
+      this.decoding = true;
+      this.setState({
+        decoding: true
+      })
+  
+      try {
+        // alert(res);
+        return await this.processPost(res);
+      } finally {
+        this.decoding = false;
+        this.setState({
+          decoding: false
+        })
+      }
+    }
+  }
+
+  handleBarCodeScanned = async ({ type, data }) => {
+    if (this.decoding) return
+
     this.saveToDB(data);
+
+    let result = await this.qrCallback(data);
+
     //change screen to Result and pass scanned qr
     this.props.navigation.navigate("Result", {
-      qr: data
+      qr: data,
+      participantName: result
     });
   };
 
@@ -60,7 +113,7 @@ class ScannerScreen extends React.Component {
               {/* </View> */}
             </Row>
             <Row style={styles.layerBottom} size={1}>
-              <FontAwesome
+              {/* <FontAwesome
                 size={25}
                 name="history"
                 color={buttonColor}
@@ -68,7 +121,7 @@ class ScannerScreen extends React.Component {
                   this.props.navigation.navigate("History");
                 }}
                 style={styles.bottomButtons}
-              />
+              /> */}
             </Row>
           </Grid>
         </BarCodeScanner>
